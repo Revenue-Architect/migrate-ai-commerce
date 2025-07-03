@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DataUpload } from "./DataUpload";
-import { MappingInterface } from "./MappingInterface";
+import { EnhancedMappingInterface } from "./EnhancedMappingInterface";
 import { DataPreview } from "./DataPreview";
 import { Brain, Database, Eye, Zap } from "lucide-react";
 
@@ -161,7 +161,7 @@ export const AIDataMappingEngine = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <MappingInterface 
+                  <EnhancedMappingInterface 
                     sourceData={sourceData} 
                     onMappingComplete={handleMappingComplete}
                   />
