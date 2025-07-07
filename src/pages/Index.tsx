@@ -1,7 +1,7 @@
-import { AIDataMappingEngine } from "@/components/AIDataMappingEngine";
+import { ShopifyMigrationApp } from "@/components/ShopifyMigrationApp";
 
 const Index = () => {
-  return <AIDataMappingEngine />;
+  return <ShopifyMigrationApp />;
 };
 
 export default Index;
