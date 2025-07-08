@@ -23,6 +23,7 @@ export const DataGridPreview = ({ data, filename, maxRows = 50 }: DataGridPrevie
     
     return Object.keys(data[0]).map(key =>
       columnHelper.accessor(key, {
+        id: key,
         header: key,
         cell: info => {
           const value = info.getValue();
