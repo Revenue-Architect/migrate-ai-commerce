@@ -21,10 +21,13 @@ export const DataGridPreview = ({ data, filename, maxRows = 50 }: DataGridPrevie
   const columns = useMemo(() => {
     if (!data.length) return [];
     
-    return Object.keys(data[0]).map(key =>
-      columnHelper.accessor(key, {
-        id: key,
-        header: key,
+    return Object.keys(data[0]).map((key, index) => {
+      const columnId = key || `column_${index}`;
+      const displayHeader = key || `Column ${index + 1}`;
+      
+      return columnHelper.accessor(key, {
+        id: columnId,
+        header: displayHeader,
         cell: info => {
           const value = info.getValue();
           const displayValue = String(value || '');
@@ -47,8 +50,8 @@ export const DataGridPreview = ({ data, filename, maxRows = 50 }: DataGridPrevie
             </div>
           );
         },
-      })
-    );
+      });
+    });
   }, [data, columnHelper]);
 
   const table = useReactTable({
