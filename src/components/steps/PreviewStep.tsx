@@ -57,31 +57,103 @@ export const PreviewStep = ({ data, mappings, filename, onNext, onBack }: Previe
     const validateData = async () => {
       try {
         setValidating(true);
-        const validationResult = await geminiService.validateData(data, mappings);
-        setValidation(validationResult);
         
-        if (validationResult.errors.length > 0) {
-          toast({
-            title: "Validation Issues Found",
-            description: `${validationResult.errors.length} errors detected. Please review before proceeding.`,
-            variant: "destructive"
-          });
+        // Check if geminiService is initialized
+        const storedApiKey = localStorage.getItem('gemini_api_key');
+        if (storedApiKey) {
+          try {
+            await geminiService.initialize(storedApiKey);
+            const validationResult = await geminiService.validateData(data, mappings);
+            setValidation(validationResult);
+            
+            if (validationResult.errors.length > 0) {
+              toast({
+                title: "Validation Issues Found",
+                description: `${validationResult.errors.length} errors detected. Please review before proceeding.`,
+                variant: "destructive"
+              });
+            } else {
+              toast({
+                title: "Validation Passed",
+                description: "Your data is ready for migration to Shopify"
+              });
+            }
+          } catch (aiError) {
+            console.error('AI validation failed:', aiError);
+            // Fall back to basic validation
+            const basicValidation = performBasicValidation();
+            setValidation(basicValidation);
+            
+            toast({
+              title: "Basic Validation Complete",
+              description: "AI validation unavailable, using basic checks"
+            });
+          }
         } else {
+          // No API key available, use basic validation
+          const basicValidation = performBasicValidation();
+          setValidation(basicValidation);
+          
           toast({
-            title: "Validation Passed",
-            description: "Your data is ready for migration to Shopify"
+            title: "Basic Validation Complete",
+            description: "AI validation requires API key, using basic checks"
           });
         }
       } catch (error) {
         console.error('Validation failed:', error);
+        // Fallback to basic validation
+        const basicValidation = performBasicValidation();
+        setValidation(basicValidation);
+        
         toast({
-          title: "Validation Failed",
-          description: "Unable to validate data. Please proceed with caution.",
-          variant: "destructive"
+          title: "Validation Complete",
+          description: "Using basic validation checks",
+          variant: "default"
         });
       } finally {
         setValidating(false);
       }
+    };
+
+    const performBasicValidation = (): ValidationResult => {
+      const errors: any[] = [];
+      const warnings: any[] = [];
+      
+      // Check for required fields
+      const requiredFields = ['title', 'sku'];
+      const mappedFields = mappings.map(m => m.targetField).filter(Boolean);
+      
+      requiredFields.forEach(required => {
+        if (!mappedFields.includes(required)) {
+          errors.push({
+            field: required,
+            type: 'required',
+            message: `Required field '${required}' is not mapped`,
+            suggestions: [`Map a source field to ${required}`]
+          });
+        }
+      });
+      
+      // Check for duplicate mappings
+      const fieldCounts = mappedFields.reduce((acc: any, field) => {
+        acc[field] = (acc[field] || 0) + 1;
+        return acc;
+      }, {});
+      
+      Object.entries(fieldCounts).forEach(([field, count]) => {
+        if ((count as number) > 1) {
+          warnings.push({
+            field,
+            message: `Field '${field}' is mapped multiple times (${count} times)`
+          });
+        }
+      });
+      
+      return {
+        isValid: errors.length === 0,
+        errors,
+        warnings
+      };
     };
 
     validateData();
