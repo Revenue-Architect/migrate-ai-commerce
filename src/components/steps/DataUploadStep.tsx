@@ -52,6 +52,8 @@ export const DataUploadStep = ({ onDataUploaded, onNext }: DataUploadStepProps) 
       setRecordCount(data.length);
       onDataUploaded(data, file.name);
       
+      console.log('Data uploaded successfully:', { filename: file.name, recordCount: data.length, sampleData: data.slice(0, 2) });
+      
       toast({
         title: "File uploaded successfully",
         description: `Processed ${data.length} records from ${file.name}`,

@@ -24,6 +24,7 @@ export const ShopifyMigrationApp = () => {
   const [mappings, setMappings] = useState<FieldMapping[]>([]);
 
   const handleDataUploaded = (data: any[], name: string) => {
+    console.log('App received data:', { name, recordCount: data.length });
     setSourceData(data);
     setFilename(name);
   };
