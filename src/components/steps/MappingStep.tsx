@@ -135,7 +135,7 @@ export const MappingStep = ({ data, onMappingComplete, onNext, onBack }: Mapping
   const updateMapping = (sourceField: string, targetField: string) => {
     const updatedMappings = mappings.map(mapping =>
       mapping.sourceField === sourceField
-        ? { ...mapping, targetField, confidence: targetField ? 100 : 0 }
+        ? { ...mapping, targetField: targetField === 'no-mapping' ? '' : targetField, confidence: targetField && targetField !== 'no-mapping' ? 100 : 0 }
         : mapping
     );
     setMappings(updatedMappings);
@@ -278,7 +278,7 @@ export const MappingStep = ({ data, onMappingComplete, onNext, onBack }: Mapping
                       <SelectValue placeholder="Select Shopify field..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No mapping</SelectItem>
+                      <SelectItem value="no-mapping">No mapping</SelectItem>
                       {SHOPIFY_FIELDS.map(field => (
                         <SelectItem key={field.id} value={field.id}>
                           <div className="flex items-center gap-2">
