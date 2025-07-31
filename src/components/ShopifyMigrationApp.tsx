@@ -15,6 +15,7 @@ interface FieldMapping {
   targetField: string;
   confidence: number;
   reasoning: string;
+  status?: 'mapped' | 'unmapped' | 'conflict';
 }
 
 export const ShopifyMigrationApp = () => {

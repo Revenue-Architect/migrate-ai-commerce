@@ -14,6 +14,7 @@ interface FieldMapping {
   targetField: string;
   confidence: number;
   reasoning: string;
+  status?: 'mapped' | 'unmapped' | 'conflict';
 }
 
 interface PreviewStepProps {
@@ -81,7 +82,7 @@ export const PreviewStep = ({ data, mappings, filename, onNext, onBack }: Previe
     
     try {
       const totalRecords = data.length;
-      const validMappings = mappings.filter(m => m && m.targetField);
+      const validMappings = mappings.filter(m => m && m.targetField && m.targetField.trim() !== '');
       const mappedFields = validMappings.length;
       const highConfidenceMappings = mappings.filter(m => m && typeof m.confidence === 'number' && m.confidence >= 80).length;
       
@@ -111,7 +112,7 @@ export const PreviewStep = ({ data, mappings, filename, onNext, onBack }: Previe
       // Check for required fields
       const requiredFields = ['title', 'sku'];
       const mappedTargetFields = mappings
-        .filter(m => m && m.targetField)
+        .filter(m => m && m.targetField && m.targetField.trim() !== '')
         .map(m => m.targetField);
       
       requiredFields.forEach(required => {
