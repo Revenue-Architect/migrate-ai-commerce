@@ -28,11 +28,34 @@ export const PreviewStep = ({ data, mappings, filename, onNext, onBack }: Previe
   const [validating, setValidating] = useState(true);
   const { toast } = useToast();
 
+  // Early return if props are invalid to prevent crashes
+  if (!data || !Array.isArray(data) || !mappings || !Array.isArray(mappings)) {
+    return (
+      <Card>
+        <CardContent className="p-8 text-center">
+          <Alert>
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              Invalid data or mappings provided. Please go back and try again.
+            </AlertDescription>
+          </Alert>
+          <div className="mt-4">
+            <Button onClick={onBack}>Back to Mapping</Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const mappedData = useMemo(() => {
+    if (!data || !Array.isArray(data) || data.length === 0 || !mappings || mappings.length === 0) {
+      return [];
+    }
+    
     return data.map(row => {
       const mapped: any = {};
       mappings.forEach(mapping => {
-        if (mapping.targetField) {
+        if (mapping && mapping.targetField && mapping.sourceField) {
           mapped[mapping.targetField] = row[mapping.sourceField];
         }
       });
@@ -41,9 +64,18 @@ export const PreviewStep = ({ data, mappings, filename, onNext, onBack }: Previe
   }, [data, mappings]);
 
   const stats = useMemo(() => {
+    if (!data || !Array.isArray(data) || !mappings || !Array.isArray(mappings)) {
+      return {
+        totalRecords: 0,
+        mappedFields: 0,
+        highConfidenceMappings: 0,
+        unmappedFields: 0
+      };
+    }
+    
     const totalRecords = data.length;
-    const mappedFields = mappings.filter(m => m.targetField).length;
-    const highConfidenceMappings = mappings.filter(m => m.confidence >= 80).length;
+    const mappedFields = mappings.filter(m => m && m.targetField).length;
+    const highConfidenceMappings = mappings.filter(m => m && m.confidence >= 80).length;
     
     return {
       totalRecords,
@@ -54,6 +86,12 @@ export const PreviewStep = ({ data, mappings, filename, onNext, onBack }: Previe
   }, [data, mappings]);
 
   useEffect(() => {
+    // Only run validation if we have both data and mappings
+    if (!data || !Array.isArray(data) || data.length === 0 || !mappings || !Array.isArray(mappings)) {
+      setValidating(false);
+      return;
+    }
+
     const validateData = async () => {
       try {
         setValidating(true);
