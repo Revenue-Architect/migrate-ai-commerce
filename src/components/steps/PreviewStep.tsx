@@ -54,8 +54,11 @@ export const PreviewStep = ({ data, mappings, filename, onNext, onBack }: Previe
         const mapped: any = {};
         mappings.forEach(mapping => {
           try {
-            if (mapping?.targetField && mapping?.sourceField && row) {
-              mapped[mapping.targetField] = row[mapping.sourceField] || '';
+            if (mapping?.targetField && mapping?.targetField.trim() !== '' && mapping?.sourceField && row && typeof row === 'object') {
+              const sourceValue = row[mapping.sourceField];
+              if (sourceValue !== undefined) {
+                mapped[mapping.targetField] = sourceValue || '';
+              }
             }
           } catch (err) {
             console.error('Error mapping field:', mapping, err);
@@ -368,7 +371,7 @@ export const PreviewStep = ({ data, mappings, filename, onNext, onBack }: Previe
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {mappings.filter(m => m && m.targetField).map((mapping, index) => (
+            {mappings.filter(m => m && m.targetField && m.targetField.trim() !== '').map((mapping, index) => (
               <div key={index} className="flex items-center justify-between p-2 border rounded">
                 <span className="text-sm font-medium">{mapping.sourceField}</span>
                 <div className="flex items-center gap-2">
