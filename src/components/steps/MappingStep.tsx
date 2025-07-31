@@ -88,7 +88,6 @@ export const MappingStep = ({ data, onMappingComplete, onNext, onBack }: Mapping
       }));
       
       setMappings(aiMappings);
-      onMappingComplete(aiMappings);
       
       toast({
         title: "AI Analysis Complete",
@@ -111,7 +110,6 @@ export const MappingStep = ({ data, onMappingComplete, onNext, onBack }: Mapping
         reasoning: 'Manual mapping required'
       }));
       setMappings(basicMappings);
-      onMappingComplete(basicMappings);
     } finally {
       setAnalyzing(false);
     }
@@ -308,7 +306,7 @@ export const MappingStep = ({ data, onMappingComplete, onNext, onBack }: Mapping
         <Button variant="outline" onClick={onBack}>
           Back to Upload
         </Button>
-        <Button onClick={onNext} disabled={!canProceed}>
+        <Button onClick={() => { onMappingComplete(mappings); onNext(); }} disabled={!canProceed}>
           Continue to Preview ({mappedRequiredFields.length} required fields mapped)
         </Button>
       </div>
