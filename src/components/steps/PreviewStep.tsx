@@ -149,7 +149,7 @@ export const PreviewStep = ({ data, mappings, filename, onNext, onBack }: Previe
       console.error('Error in basic validation:', err);
       return {
         isValid: false,
-        errors: [{ field: 'system', message: 'Validation error occurred', type: 'error' }],
+        errors: [{ field: 'system', message: 'Validation error occurred', type: 'invalid' }],
         warnings: []
       };
     }
