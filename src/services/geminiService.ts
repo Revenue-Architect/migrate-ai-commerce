@@ -7,7 +7,7 @@ interface SchemaDetectionResult {
     confidence: number;
     sampleValues: string[];
   }>;
-  detectedSource: 'square' | 'lightspeed' | 'revel' | 'unknown';
+  detectedSource: 'square' | 'lightspeed' | 'revel' | 'heartland' | 'magento' | 'woocommerce' | 'teamworks' | 'unknown';
   confidence: number;
 }
 
@@ -60,7 +60,9 @@ class GeminiService {
     const fields = Object.keys(sampleData[0] || {});
     
     const prompt = `
-Analyze this POS data structure and detect the schema:
+You are a Shopify data migration expert. Analyze this POS data structure and detect the schema.
+
+When analyzing complex or unclear data structures, consider how they could be organized using Shopify metafields and metaobjects for better data organization and flexibility.
 
 Sample data (first 5 rows):
 ${JSON.stringify(sampleData, null, 2)}
@@ -77,11 +79,14 @@ Please analyze and respond in JSON format:
       "sampleValues": ["val1", "val2", "val3"]
     }
   ],
-  "detectedSource": "square|lightspeed|revel|unknown",
+  "detectedSource": "square|lightspeed|revel|heartland|magento|woocommerce|teamworks|unknown",
   "confidence": 0-100
 }
 
-Consider common POS field patterns like SKU, product names, prices, customer info, etc.
+Consider:
+- Common POS field patterns like SKU, product names, prices, customer info
+- Complex data that could benefit from metafields or metaobjects
+- Custom attributes that don't fit standard Shopify fields
 `;
 
     try {
@@ -116,11 +121,14 @@ Consider common POS field patterns like SKU, product names, prices, customer inf
       'title', 'description', 'vendor', 'product_type', 'sku', 'price',
       'compare_at_price', 'inventory_quantity', 'weight', 'tags',
       'first_name', 'last_name', 'email', 'phone', 'address1',
-      'city', 'province', 'country', 'zip'
+      'city', 'province', 'country', 'zip',
+      'metafield', 'metaobject'
     ];
 
     const prompt = `
-Map these POS data fields to Shopify fields:
+You are a Shopify data migration expert. Map these POS data fields to Shopify fields with expertise in data organization.
+
+When you encounter data that doesn't fit standard Shopify fields, consider using metafields or metaobjects for better organization and future flexibility.
 
 Source fields with sample data:
 ${sourceFields.map(field => {
@@ -142,11 +150,14 @@ Please suggest mappings in JSON format:
   }
 ]
 
-Consider:
+Consider as a Shopify migration expert:
 - Field names and their semantic meaning
 - Sample data content and format
 - Common POS to Shopify mapping patterns
 - Data types and validation requirements
+- Use "metafield" for custom attributes that don't fit standard fields
+- Use "metaobject" for complex structured data that needs custom organization
+- Prioritize data integrity and future extensibility
 `;
 
     try {
@@ -185,7 +196,7 @@ Consider:
     });
 
     const prompt = `
-Validate this Shopify-mapped data for common issues:
+You are a Shopify data migration expert. Validate this Shopify-mapped data for common issues and suggest improvements using metafields/metaobjects when appropriate.
 
 Sample mapped data:
 ${JSON.stringify(mappedSample, null, 2)}
@@ -200,6 +211,8 @@ Check for:
 - Duplicate SKUs
 - Missing critical data
 - Format issues
+- Opportunities to use metafields for custom data
+- Complex data that could benefit from metaobjects
 
 Respond in JSON:
 {
