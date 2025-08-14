@@ -18,6 +18,7 @@ interface FieldMapping {
 
 interface MappingStepProps {
   data: any[];
+  sourcePlatform?: string;
   onMappingComplete: (mappings: FieldMapping[]) => void;
   onNext: () => void;
   onBack: () => void;
@@ -40,7 +41,7 @@ const SHOPIFY_FIELDS = [
   { id: 'phone', label: 'Phone', required: false, category: 'customer' },
 ];
 
-export const MappingStep = ({ data, onMappingComplete, onNext, onBack }: MappingStepProps) => {
+export const MappingStep = ({ data, sourcePlatform, onMappingComplete, onNext, onBack }: MappingStepProps) => {
   const [mappings, setMappings] = useState<FieldMapping[]>([]);
   const [analyzing, setAnalyzing] = useState(true);
   const [geminiApiKey, setGeminiApiKey] = useState('');
@@ -73,12 +74,12 @@ export const MappingStep = ({ data, onMappingComplete, onNext, onBack }: Mapping
       setAnalyzing(true);
       await geminiService.initialize(apiKey);
       
-      // Detect schema
-      const schema = await geminiService.detectSchema(data);
+      // Detect schema with platform context
+      const schema = await geminiService.detectSchema(data, sourcePlatform);
       setSchemaInfo(schema);
       
-      // Get AI mapping suggestions
-      const suggestions = await geminiService.suggestMappings(sourceFields, data, schema);
+      // Get AI mapping suggestions with platform context
+      const suggestions = await geminiService.suggestMappings(sourceFields, data, schema, sourcePlatform);
       
       const aiMappings: FieldMapping[] = suggestions.map(suggestion => ({
         sourceField: suggestion.sourceField,
@@ -89,9 +90,10 @@ export const MappingStep = ({ data, onMappingComplete, onNext, onBack }: Mapping
       
       setMappings(aiMappings);
       
+      const platformText = sourcePlatform ? ` from ${sourcePlatform}` : '';
       toast({
         title: "AI Analysis Complete",
-        description: `Detected ${schema.detectedSource} POS system with ${suggestions.length} field mappings`,
+        description: `Detected ${schema.detectedSource} POS system${platformText} with ${suggestions.length} field mappings`,
       });
       
     } catch (error) {
@@ -226,14 +228,26 @@ export const MappingStep = ({ data, onMappingComplete, onNext, onBack }: Mapping
                 <Brain className="h-5 w-5 text-primary" />
                 Schema Detection Results
               </div>
-              <Badge variant="outline">
-                {schemaInfo.detectedSource} • {schemaInfo.confidence}% confidence
-              </Badge>
+              <div className="flex gap-2">
+                {sourcePlatform && (
+                  <Badge variant="secondary">
+                    Source: {sourcePlatform}
+                  </Badge>
+                )}
+                <Badge variant="outline">
+                  {schemaInfo.detectedSource} • {schemaInfo.confidence}% confidence
+                </Badge>
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
               Detected as {schemaInfo.detectedSource} POS system data with {schemaInfo.fields.length} fields analyzed.
+              {sourcePlatform && sourcePlatform !== schemaInfo.detectedSource && (
+                <span className="text-amber-600 ml-1">
+                  (Note: Detected format differs from selected platform)
+                </span>
+              )}
             </p>
           </CardContent>
         </Card>

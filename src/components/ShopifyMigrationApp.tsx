@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -22,12 +23,14 @@ export const ShopifyMigrationApp = () => {
   const [currentStep, setCurrentStep] = useState<Step>('upload');
   const [sourceData, setSourceData] = useState<any[]>([]);
   const [filename, setFilename] = useState('');
+  const [sourcePlatform, setSourcePlatform] = useState('');
   const [mappings, setMappings] = useState<FieldMapping[]>([]);
 
-  const handleDataUploaded = (data: any[], name: string) => {
-    console.log('App received data:', { name, recordCount: data.length });
+  const handleDataUploaded = (data: any[], name: string, platform?: string) => {
+    console.log('App received data:', { name, platform, recordCount: data.length });
     setSourceData(data);
     setFilename(name);
+    setSourcePlatform(platform || '');
   };
 
   const handleMappingComplete = (completedMappings: FieldMapping[]) => {
@@ -38,6 +41,7 @@ export const ShopifyMigrationApp = () => {
     setCurrentStep('upload');
     setSourceData([]);
     setFilename('');
+    setSourcePlatform('');
     setMappings([]);
   };
 
@@ -71,7 +75,14 @@ export const ShopifyMigrationApp = () => {
         {/* Progress Steps */}
         <Card>
           <CardHeader>
-            <CardTitle>Migration Progress</CardTitle>
+            <CardTitle className="flex items-center justify-between">
+              <span>Migration Progress</span>
+              {sourcePlatform && (
+                <Badge variant="outline" className="text-xs">
+                  Source: {sourcePlatform}
+                </Badge>
+              )}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
@@ -130,6 +141,7 @@ export const ShopifyMigrationApp = () => {
           {currentStep === 'mapping' && (
             <MappingStep
               data={sourceData}
+              sourcePlatform={sourcePlatform}
               onMappingComplete={handleMappingComplete}
               onNext={() => setCurrentStep('preview')}
               onBack={() => setCurrentStep('upload')}
@@ -141,6 +153,7 @@ export const ShopifyMigrationApp = () => {
               data={sourceData}
               mappings={mappings}
               filename={filename}
+              sourcePlatform={sourcePlatform}
               onNext={() => setCurrentStep('migration')}
               onBack={() => setCurrentStep('mapping')}
             />
@@ -151,6 +164,7 @@ export const ShopifyMigrationApp = () => {
               data={sourceData}
               mappings={mappings}
               filename={filename}
+              sourcePlatform={sourcePlatform}
               onComplete={handleMigrationComplete}
               onBack={() => setCurrentStep('preview')}
             />
