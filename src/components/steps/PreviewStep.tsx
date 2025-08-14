@@ -21,11 +21,12 @@ interface PreviewStepProps {
   data: any[];
   mappings: FieldMapping[];
   filename: string;
+  sourcePlatform: string;
   onNext: () => void;
   onBack: () => void;
 }
 
-export const PreviewStep = ({ data, mappings, filename, onNext, onBack }: PreviewStepProps) => {
+export const PreviewStep = ({ data, mappings, filename, sourcePlatform, onNext, onBack }: PreviewStepProps) => {
   const [validation, setValidation] = useState<ValidationResult | null>(null);
   const [validating, setValidating] = useState(false);
   const [error, setError] = useState<string | null>(null);

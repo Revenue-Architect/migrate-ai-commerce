@@ -17,6 +17,7 @@ interface MigrationStepProps {
   data: any[];
   mappings: FieldMapping[];
   filename: string;
+  sourcePlatform: string;
   onComplete: () => void;
   onBack: () => void;
 }
@@ -29,7 +30,7 @@ interface MigrationStatus {
   totalRecords: number;
 }
 
-export const MigrationStep = ({ data, mappings, filename, onComplete, onBack }: MigrationStepProps) => {
+export const MigrationStep = ({ data, mappings, filename, sourcePlatform, onComplete, onBack }: MigrationStepProps) => {
   const [status, setStatus] = useState<MigrationStatus>({
     stage: 'preparing',
     progress: 0,

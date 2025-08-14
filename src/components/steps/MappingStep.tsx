@@ -75,11 +75,11 @@ export const MappingStep = ({ data, sourcePlatform, onMappingComplete, onNext, o
       await geminiService.initialize(apiKey);
       
       // Detect schema with platform context
-      const schema = await geminiService.detectSchema(data, sourcePlatform);
+      const schema = await geminiService.detectSchema(data);
       setSchemaInfo(schema);
       
       // Get AI mapping suggestions with platform context
-      const suggestions = await geminiService.suggestMappings(sourceFields, data, schema, sourcePlatform);
+      const suggestions = await geminiService.suggestMappings(sourceFields, data, schema);
       
       const aiMappings: FieldMapping[] = suggestions.map(suggestion => ({
         sourceField: suggestion.sourceField,
