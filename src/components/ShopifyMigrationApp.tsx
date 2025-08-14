@@ -1,5 +1,6 @@
 
 import { useState } from 'react';
+import { ErrorBoundary } from './ErrorBoundary';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { DataUploadStep } from './steps/DataUploadStep';
@@ -139,13 +140,15 @@ export const ShopifyMigrationApp = () => {
           )}
 
           {currentStep === 'mapping' && (
-            <MappingStep
-              data={sourceData}
-              sourcePlatform={sourcePlatform}
-              onMappingComplete={handleMappingComplete}
-              onNext={() => setCurrentStep('preview')}
-              onBack={() => setCurrentStep('upload')}
-            />
+            <ErrorBoundary>
+              <MappingStep
+                data={sourceData}
+                sourcePlatform={sourcePlatform}
+                onMappingComplete={handleMappingComplete}
+                onNext={() => setCurrentStep('preview')}
+                onBack={() => setCurrentStep('upload')}
+              />
+            </ErrorBoundary>
           )}
 
           {currentStep === 'preview' && (

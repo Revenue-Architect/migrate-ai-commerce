@@ -38,7 +38,7 @@ class GeminiService {
   private isInitialized = false;
 
   async initialize(apiKey: string) {
-    if (this.isInitialized) return;
+    if (this.isInitialized && this.model) return; // Prevent re-initialization
     
     try {
       this.genAI = new GoogleGenerativeAI(apiKey);
@@ -56,7 +56,8 @@ class GeminiService {
       throw new Error('Gemini service not initialized');
     }
 
-    const sampleData = data.slice(0, 5);
+    // Limit sample data to prevent memory issues
+    const sampleData = data.slice(0, Math.min(3, data.length)); // Reduce from 5 to 3
     const fields = Object.keys(sampleData[0] || {});
     
     const prompt = `
@@ -131,9 +132,10 @@ You are a Shopify data migration expert. Map these POS data fields to Shopify fi
 When you encounter data that doesn't fit standard Shopify fields, consider using metafields or metaobjects for better organization and future flexibility.
 
 Source fields with sample data:
-${sourceFields.map(field => {
-  const samples = sampleData.slice(0, 3).map(row => row[field]).filter(Boolean);
-  return `${field}: [${samples.join(', ')}]`;
+${sourceFields.slice(0, 20).map(field => { // Limit to first 20 fields to prevent massive prompts
+  const samples = sampleData.slice(0, 2).map(row => row[field]).filter(Boolean); // Reduce samples
+  const sampleText = samples.join(', ');
+  return `${field}: [${sampleText.length > 100 ? sampleText.substring(0, 100) + '...' : sampleText}]`;
 }).join('\n')}
 
 Available Shopify fields: ${shopifyFields.join(', ')}

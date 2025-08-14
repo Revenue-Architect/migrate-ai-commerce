@@ -67,19 +67,34 @@ export const MappingStep = ({ data, sourcePlatform, onMappingComplete, onNext, o
     if (sourceFields.length > 0) {
       initializeAI();
     }
-  }, [data]);
+  }, [sourceFields.length]); // Fix: Use sourceFields.length instead of data to prevent infinite loops
 
   const performAIAnalysis = async (apiKey: string) => {
     try {
       setAnalyzing(true);
-      await geminiService.initialize(apiKey);
+      
+      // Add timeout for AI operations
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('AI analysis timeout')), 30000)
+      );
+      
+      await Promise.race([
+        geminiService.initialize(apiKey),
+        timeoutPromise
+      ]);
       
       // Detect schema with platform context
-      const schema = await geminiService.detectSchema(data);
+      const schema = await Promise.race([
+        geminiService.detectSchema(data),
+        timeoutPromise
+      ]) as SchemaDetectionResult;
       setSchemaInfo(schema);
       
       // Get AI mapping suggestions with platform context
-      const suggestions = await geminiService.suggestMappings(sourceFields, data, schema);
+      const suggestions = await Promise.race([
+        geminiService.suggestMappings(sourceFields, data, schema),
+        timeoutPromise
+      ]) as MappingResult[];
       
       const aiMappings: FieldMapping[] = suggestions.map(suggestion => ({
         sourceField: suggestion.sourceField,
@@ -100,7 +115,9 @@ export const MappingStep = ({ data, sourcePlatform, onMappingComplete, onNext, o
       console.error('AI analysis failed:', error);
       toast({
         title: "AI Analysis Failed",
-        description: "Using basic pattern matching instead",
+        description: error instanceof Error && error.message.includes('timeout') 
+          ? "Analysis timed out - using basic pattern matching instead" 
+          : "Using basic pattern matching instead",
         variant: "destructive"
       });
       
