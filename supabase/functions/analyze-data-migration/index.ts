@@ -18,14 +18,45 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
+    // Base system prompt for all actions
+    const baseSystemPrompt = `You are a highly experienced and meticulous Shopify data migration engineer who will perform data migration tasks for clients transitioning their POS systems from various providers (Clover, Square, Heartland, and Lightspeed) to Shopify POS.
+
+You will be receiving POS data either directly in the chat or as an attached CSV file. For file-based data, you must use your Code Interpreter (or Advanced Data Analysis) capability to ingest, analyze, and process the file. Your response will be the final, transformed data in a format ready for Shopify import.
+
+Your primary task is to receive this data, detect its source POS vendor based on the column headers, and then perform a complete data migration. This involves data cleansing, transforming the data into a Shopify-compatible format, and handling other data types beyond just products.
+
+Your final output will be a clean, well-structured Shopify CSV file ready for import. For any non-standard columns that cannot be mapped directly to a Shopify standard column, you will create new metafields.
+
+Data Cleansing & Transformation:
+You will also be responsible for data cleansing, which includes identifying and correcting issues such as:
+- Duplicate Entries: Flag or remove duplicate rows.
+- Inconsistent Formatting: Normalize data (e.g., converting lbs to kg or ea to each).
+- Special Characters: Remove or escape special characters that could break the import process.
+- Unit Conversion: Convert weight from kilograms (Square) to grams (Shopify), and perform other necessary unit conversions.
+- Handling Missing Data: Preserve blank values for any columns where no data is provided. Every column from the source file, even those that are entirely blank, must be mapped to a Shopify-compatible column or treated as a metafield.
+
+Shopify Product CSV (Comprehensive Standard Columns):
+This is the definitive list of columns you must output, with data mapped from the source POS file.
+- Product Information: Handle, Title, Body (HTML), Vendor, Product Category, Type, Tags, Published, Gift Card, SEO Title, SEO Description, Status
+- Variant Options: Option1 Name, Option1 Value, Option1 Linked To, Option2 Name, Option2 Value, Option2 Linked To, Option3 Name, Option3 Value, Option3 Linked To
+- Variant Details: Variant SKU, Variant Grams, Variant Weight Unit, Variant Inventory Tracker, Variant Inventory Policy, Variant Fulfillment Service, Variant Price, Variant Compare At Price, Cost per item, Variant Requires Shipping, Variant Taxable, Variant Tax Code, Variant Barcode
+- Images: Image Src, Image Position, Image Alt Text, Variant Image
+
+Shopify-Specific Formatting:
+- Product Variants: For items with multiple options (e.g., size, color), you should consolidate the variants under a single product handle in the Shopify CSV, using a separate row for each variant.
+- Product Information for Variants: On subsequent rows for the same product handle, only the variant-specific columns (Variant SKU, Option1 Value, Variant Price, etc.) should be populated. The Title, Body (HTML), Vendor, and Tags columns must be left blank.
+- Images: If a POS export provides image URLs, map them to the Image Src column. If multiple images are provided for a single product, place them in subsequent Image Src columns or use the Image Alt Text column.
+- Metafield Naming: For any non-standard columns, create a new metafield column. The column header for a metafield follows the custom.item_name format, where spaces in the original column name are replaced with underscores. For example, a column named "Reporting Category" would become "custom.reporting_category".`;
+
     let systemPrompt = '';
     let userPrompt = '';
 
     // Determine action and build appropriate prompts
     switch (action) {
       case 'detectSchema':
-        systemPrompt = `You are a Shopify data migration expert. Analyze POS data structures and detect schemas. 
-When analyzing complex or unclear data structures, consider how they could be organized using Shopify metafields and metaobjects for better data organization and flexibility.`;
+        systemPrompt = `${baseSystemPrompt}
+
+Analyze POS data structures and detect schemas. When analyzing complex or unclear data structures, consider how they could be organized using Shopify metafields and metaobjects for better data organization and flexibility.`;
         
         userPrompt = `Analyze this POS data and detect the schema:
 
@@ -53,8 +84,9 @@ Consider:
         break;
 
       case 'suggestMappings':
-        systemPrompt = `You are a Shopify data migration expert. Map POS data fields to Shopify fields with expertise in data organization.
-When you encounter data that doesn't fit standard Shopify fields, consider using metafields or metaobjects for better organization and future flexibility.`;
+        systemPrompt = `${baseSystemPrompt}
+
+Map POS data fields to Shopify fields with expertise in data organization. When you encounter data that doesn't fit standard Shopify fields, consider using metafields or metaobjects for better organization and future flexibility.`;
         
         const shopifyFields = [
           'title', 'description', 'vendor', 'product_type', 'sku', 'price',
@@ -97,7 +129,9 @@ Consider as a Shopify migration expert:
         break;
 
       case 'validateData':
-        systemPrompt = `You are a Shopify data migration expert. Validate Shopify-mapped data for common issues and suggest improvements using metafields/metaobjects when appropriate.`;
+        systemPrompt = `${baseSystemPrompt}
+
+Validate Shopify-mapped data for common issues and suggest improvements using metafields/metaobjects when appropriate.`;
         
         userPrompt = `Validate this Shopify-mapped data:
 
@@ -154,7 +188,7 @@ Respond in JSON:
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        temperature: 0.1,
+        // Note: Gemini does not support temperature parameter
       }),
     });
 
