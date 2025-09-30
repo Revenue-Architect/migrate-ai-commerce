@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Brain, CheckCircle, AlertTriangle, XCircle, Zap, Loader2 } from "lucide-react";
-import { aiMappingService } from "@/services/aiMappingService";
+import { cloudAIService } from "@/services/cloudAIService";
 import { useToast } from "@/hooks/use-toast";
 
 interface FieldMapping {
@@ -40,51 +40,40 @@ const SHOPIFY_FIELDS = [
 export const EnhancedMappingInterface = ({ sourceData, onMappingComplete }: EnhancedMappingInterfaceProps) => {
   const [mappings, setMappings] = useState<FieldMapping[]>([]);
   const [aiAnalyzing, setAiAnalyzing] = useState(true);
-  const [aiInitializing, setAiInitializing] = useState(false);
-  const [validationIssues, setValidationIssues] = useState<Array<{field: string, issues: string[]}>>([]);
   const { toast } = useToast();
 
   const sourceFields = sourceData.length > 0 ? Object.keys(sourceData[0]) : [];
 
   useEffect(() => {
-    const initializeAndAnalyze = async () => {
+    const analyzeData = async () => {
       if (sourceFields.length === 0) return;
       
-      setAiInitializing(true);
       setAiAnalyzing(true);
       
       try {
-        // Initialize AI service
-        await aiMappingService.initialize();
-        
         toast({
-          title: "AI Engine Ready",
-          description: "Advanced mapping analysis is now available"
+          title: "AI Analysis Starting",
+          description: "Using Lovable Cloud AI for intelligent mapping"
         });
         
-        setAiInitializing(false);
+        const schema = await cloudAIService.detectSchema(sourceData.slice(0, 10));
         
-        // Perform AI analysis
-        const analyses = await aiMappingService.analyzeFieldMapping(
+        const analyses = await cloudAIService.suggestMappings(
           sourceFields,
-          sourceData.slice(0, 10), // Use first 10 rows for analysis
-          SHOPIFY_FIELDS
+          sourceData.slice(0, 10),
+          schema.detectedSource
         );
         
         const aiMappings: FieldMapping[] = analyses.map(analysis => ({
           sourceField: analysis.sourceField,
-          targetField: analysis.mappingResult.targetField,
-          confidence: analysis.mappingResult.confidence,
-          status: analysis.mappingResult.confidence > 60 ? 'mapped' : 'unmapped',
-          reasoning: analysis.mappingResult.reasoning,
-          dataType: analysis.dataType
+          targetField: analysis.suggestedMapping,
+          confidence: analysis.confidence,
+          status: analysis.confidence > 60 ? 'mapped' : 'unmapped',
+          reasoning: analysis.reasoning,
+          dataType: 'string'
         }));
         
         setMappings(aiMappings);
-        
-        // Validate mappings
-        const issues = await aiMappingService.validateMappings(aiMappings);
-        setValidationIssues(issues);
         
         toast({
           title: "AI Analysis Complete",
@@ -99,7 +88,6 @@ export const EnhancedMappingInterface = ({ sourceData, onMappingComplete }: Enha
           variant: "destructive"
         });
         
-        // Fallback to simple pattern matching
         const fallbackMappings = sourceFields.map(field => ({
           sourceField: field,
           targetField: '',
@@ -114,10 +102,10 @@ export const EnhancedMappingInterface = ({ sourceData, onMappingComplete }: Enha
       }
     };
     
-    initializeAndAnalyze();
+    analyzeData();
   }, [sourceData, sourceFields, toast]);
 
-  const updateMapping = async (sourceField: string, targetField: string) => {
+  const updateMapping = (sourceField: string, targetField: string) => {
     const updatedMappings = mappings.map(mapping => 
       mapping.sourceField === sourceField 
         ? { ...mapping, targetField, status: (targetField ? 'mapped' : 'unmapped') as 'mapped' | 'unmapped' | 'conflict' }
@@ -125,10 +113,6 @@ export const EnhancedMappingInterface = ({ sourceData, onMappingComplete }: Enha
     );
     
     setMappings(updatedMappings);
-    
-    // Re-validate
-    const issues = await aiMappingService.validateMappings(updatedMappings);
-    setValidationIssues(issues);
   };
 
   const getConfidenceBadge = (confidence: number) => {
@@ -163,21 +147,12 @@ export const EnhancedMappingInterface = ({ sourceData, onMappingComplete }: Enha
         <CardContent className="p-8">
           <div className="flex flex-col items-center space-y-4">
             <div className="animate-pulse-ai">
-              {aiInitializing ? (
-                <Loader2 className="h-12 w-12 text-primary animate-spin" />
-              ) : (
-                <Brain className="h-12 w-12 text-primary" />
-              )}
+              <Brain className="h-12 w-12 text-primary animate-spin" />
             </div>
             <div className="text-center space-y-2">
-              <h3 className="text-lg font-semibold">
-                {aiInitializing ? 'Initializing AI Engine...' : 'AI is analyzing your data...'}
-              </h3>
+              <h3 className="text-lg font-semibold">AI is analyzing your data...</h3>
               <p className="text-sm text-muted-foreground">
-                {aiInitializing 
-                  ? 'Loading advanced AI models for intelligent mapping'
-                  : 'Using Meta LLM for semantic field analysis and mapping optimization'
-                }
+                Using Lovable Cloud AI for semantic field analysis and mapping optimization
               </p>
             </div>
           </div>
@@ -188,28 +163,6 @@ export const EnhancedMappingInterface = ({ sourceData, onMappingComplete }: Enha
 
   return (
     <div className="space-y-6">
-      {validationIssues.length > 0 && (
-        <Card className="border-ai-low">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2 text-ai-low">
-              <AlertTriangle className="h-5 w-5" />
-              <span>Validation Issues</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {validationIssues.map((issue, index) => (
-                <div key={index} className="flex items-center space-x-2 text-sm">
-                  <XCircle className="h-4 w-4 text-ai-low" />
-                  <span className="font-medium">{issue.field}:</span>
-                  <span className="text-muted-foreground">{issue.issues.join(', ')}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
@@ -280,7 +233,7 @@ export const EnhancedMappingInterface = ({ sourceData, onMappingComplete }: Enha
       <div className="flex justify-end">
         <Button 
           onClick={() => onMappingComplete(mappings)}
-          disabled={mappings.some(m => m.status === 'unmapped') || validationIssues.length > 0}
+          disabled={mappings.some(m => m.status === 'unmapped')}
           className="bg-gradient-ai hover:opacity-90"
         >
           Continue to Validation

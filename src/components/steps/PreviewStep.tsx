@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { DataGridPreview } from './DataGridPreview';
 import { Eye, AlertTriangle, CheckCircle, RefreshCw } from 'lucide-react';
-import { geminiService, type ValidationResult } from '@/services/geminiService';
+import { cloudAIService, type ValidationResult } from '@/services/cloudAIService';
 import { useToast } from '@/hooks/use-toast';
 
 interface FieldMapping {
@@ -173,54 +173,33 @@ export const PreviewStep = ({ data, mappings, filename, sourcePlatform, onNext, 
         setValidating(true);
         setError(null);
         
-        // Try AI validation first
-        const storedApiKey = localStorage.getItem('gemini_api_key');
-        if (storedApiKey) {
-          try {
-            await geminiService.initialize(storedApiKey);
-            const aiValidation = await Promise.race([
-              geminiService.validateData(data, mappings),
-              new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Validation timeout')), 10000)
-              )
-            ]) as ValidationResult;
-            
-            setValidation(aiValidation);
-            
-            toast({
-              title: aiValidation.isValid ? "Validation Passed" : "Validation Issues Found",
-              description: aiValidation.isValid 
-                ? "Your data is ready for migration" 
-                : `${aiValidation.errors.length} errors detected`,
-              variant: aiValidation.isValid ? "default" : "destructive"
-            });
-            
-          } catch (aiError) {
-            console.error('AI validation failed:', aiError);
-            // Fallback to basic validation
-            const basicValidation = performBasicValidation();
-            setValidation(basicValidation);
-            
-            toast({
-              title: "Basic Validation Complete",
-              description: "AI validation unavailable, using basic checks"
-            });
-          }
-        } else {
-          // No API key, use basic validation
+        try {
+          const aiValidation = await cloudAIService.validateData(data, mappings);
+          
+          setValidation(aiValidation);
+          
+          toast({
+            title: aiValidation.isValid ? "Validation Passed" : "Validation Issues Found",
+            description: aiValidation.isValid 
+              ? "Your data is ready for migration" 
+              : `${aiValidation.errors.length} errors detected`,
+            variant: aiValidation.isValid ? "default" : "destructive"
+          });
+          
+        } catch (aiError) {
+          console.error('AI validation failed:', aiError);
           const basicValidation = performBasicValidation();
           setValidation(basicValidation);
           
           toast({
             title: "Basic Validation Complete",
-            description: "Using basic validation checks"
+            description: "AI validation unavailable, using basic checks"
           });
         }
       } catch (error) {
         console.error('Validation failed completely:', error);
         setError('Validation failed. Please try again.');
         
-        // Emergency fallback
         setValidation({
           isValid: mappings.some(m => m?.targetField),
           errors: [],
