@@ -98,11 +98,11 @@ Map POS data fields to Shopify fields with expertise in data organization. When 
         
         userPrompt = `Map these POS data fields to Shopify fields:
 
-Source fields with sample data:
-${data.sourceFields.slice(0, 20).map((field: string) => {
-  const samples = data.sampleData.slice(0, 2).map((row: any) => row[field]).filter(Boolean);
-  const sampleText = samples.join(', ');
-  return `${field}: [${sampleText.length > 100 ? sampleText.substring(0, 100) + '...' : sampleText}]`;
+Source fields with sample data (showing up to 5 sample values per field):
+${data.sourceFields.map((field: string) => {
+  const samples = data.sampleData.slice(0, 5).map((row: any) => row[field]).filter(val => val !== null && val !== undefined && val !== '');
+  const sampleText = samples.map(s => String(s)).join(' | ');
+  return `${field}: [${sampleText.length > 200 ? sampleText.substring(0, 200) + '...' : sampleText}]`;
 }).join('\n')}
 
 Available Shopify fields: ${shopifyFields.join(', ')}

@@ -66,7 +66,7 @@ class CloudAIService {
 
   async detectSchema(data: any[]): Promise<SchemaDetectionResult> {
     try {
-      const sampleData = data.slice(0, Math.min(3, data.length));
+      const sampleData = data.slice(0, Math.min(10, data.length));
       const fields = Object.keys(sampleData[0] || {});
 
       const result = await this.callEdgeFunction('detectSchema', {
@@ -88,8 +88,8 @@ class CloudAIService {
   ): Promise<MappingResult[]> {
     try {
       const result = await this.callEdgeFunction('suggestMappings', {
-        sourceFields: sourceFields.slice(0, 20),
-        sampleData: sampleData.slice(0, 2),
+        sourceFields,
+        sampleData: sampleData.slice(0, 10),
         detectedSource
       });
 
