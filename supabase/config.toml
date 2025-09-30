@@ -1,0 +1,4 @@
+project_id = "ghjlzonlnxbrpiiwdqbp"
+
+[functions.analyze-data-migration]
+verify_jwt = false

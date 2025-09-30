@@ -5,8 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Brain, ArrowRight, AlertTriangle, CheckCircle, Settings } from 'lucide-react';
-import { geminiService, type MappingResult, type SchemaDetectionResult } from '@/services/geminiService';
+import { Brain, ArrowRight, AlertTriangle, CheckCircle } from 'lucide-react';
+import { cloudAIService, type MappingResult, type SchemaDetectionResult } from '@/services/cloudAIService';
 import { useToast } from '@/hooks/use-toast';
 
 interface FieldMapping {
@@ -44,57 +44,29 @@ const SHOPIFY_FIELDS = [
 export const MappingStep = ({ data, sourcePlatform, onMappingComplete, onNext, onBack }: MappingStepProps) => {
   const [mappings, setMappings] = useState<FieldMapping[]>([]);
   const [analyzing, setAnalyzing] = useState(true);
-  const [geminiApiKey, setGeminiApiKey] = useState('');
-  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const [schemaInfo, setSchemaInfo] = useState<SchemaDetectionResult | null>(null);
   const { toast } = useToast();
 
   const sourceFields = data.length > 0 ? Object.keys(data[0]) : [];
 
   useEffect(() => {
-    const initializeAI = async () => {
-      // Check if we have an API key stored
-      const storedApiKey = localStorage.getItem('gemini_api_key');
-      if (storedApiKey) {
-        setGeminiApiKey(storedApiKey);
-        await performAIAnalysis(storedApiKey);
-      } else {
-        setShowApiKeyInput(true);
-        setAnalyzing(false);
-      }
-    };
-
     if (sourceFields.length > 0) {
-      initializeAI();
+      performAIAnalysis();
     }
-  }, [sourceFields.length]); // Fix: Use sourceFields.length instead of data to prevent infinite loops
+  }, [sourceFields.length]);
 
-  const performAIAnalysis = async (apiKey: string) => {
+  const performAIAnalysis = async () => {
     try {
       setAnalyzing(true);
       
-      // Add timeout for AI operations
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('AI analysis timeout')), 30000)
-      );
-      
-      await Promise.race([
-        geminiService.initialize(apiKey),
-        timeoutPromise
-      ]);
-      
-      // Detect schema with platform context
-      const schema = await Promise.race([
-        geminiService.detectSchema(data),
-        timeoutPromise
-      ]) as SchemaDetectionResult;
+      const schema = await cloudAIService.detectSchema(data);
       setSchemaInfo(schema);
       
-      // Get AI mapping suggestions with platform context
-      const suggestions = await Promise.race([
-        geminiService.suggestMappings(sourceFields, data, schema),
-        timeoutPromise
-      ]) as MappingResult[];
+      const suggestions = await cloudAIService.suggestMappings(
+        sourceFields,
+        data,
+        schema.detectedSource
+      );
       
       const aiMappings: FieldMapping[] = suggestions.map(suggestion => ({
         sourceField: suggestion.sourceField,
@@ -121,7 +93,6 @@ export const MappingStep = ({ data, sourcePlatform, onMappingComplete, onNext, o
         variant: "destructive"
       });
       
-      // Fallback to basic mapping
       const basicMappings = sourceFields.map(field => ({
         sourceField: field,
         targetField: '',
@@ -134,20 +105,6 @@ export const MappingStep = ({ data, sourcePlatform, onMappingComplete, onNext, o
     }
   };
 
-  const handleApiKeySubmit = async () => {
-    if (!geminiApiKey.trim()) {
-      toast({
-        title: "API Key Required",
-        description: "Please enter your Google Gemini API key",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    localStorage.setItem('gemini_api_key', geminiApiKey);
-    setShowApiKeyInput(false);
-    await performAIAnalysis(geminiApiKey);
-  };
 
   const updateMapping = (sourceField: string, targetField: string) => {
     const updatedMappings = mappings.map(mapping =>
@@ -169,53 +126,6 @@ export const MappingStep = ({ data, sourcePlatform, onMappingComplete, onNext, o
   const mappedRequiredFields = mappings.filter(m => m.targetField && requiredMappings.includes(m.targetField));
   const canProceed = mappedRequiredFields.length >= Math.min(2, requiredMappings.length); // At least 2 required fields
 
-  if (showApiKeyInput) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5 text-primary" />
-            AI Configuration Required
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Alert>
-            <Brain className="h-4 w-4" />
-            <AlertDescription>
-              To enable AI-powered mapping, please provide your Google Gemini API key. Your key is stored locally and only used for AI analysis.
-            </AlertDescription>
-          </Alert>
-          
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Google Gemini API Key</label>
-            <Input
-              type="password"
-              placeholder="Enter your Gemini API key..."
-              value={geminiApiKey}
-              onChange={(e) => setGeminiApiKey(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleApiKeySubmit()}
-            />
-          </div>
-          
-          <div className="flex gap-2">
-            <Button onClick={handleApiKeySubmit} disabled={!geminiApiKey.trim()}>
-              Enable AI Mapping
-            </Button>
-            <Button variant="outline" onClick={onBack}>
-              Back
-            </Button>
-          </div>
-          
-          <div className="text-xs text-muted-foreground">
-            Don't have an API key? Get one at{' '}
-            <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-              Google AI Studio
-            </a>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   if (analyzing) {
     return (
